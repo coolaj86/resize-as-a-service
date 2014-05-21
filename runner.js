@@ -8,10 +8,11 @@ var resizer = require('./server')
 
 config.protocol = 'http:';
 config.port = config.port || process.argv[2] || 5050;
-config.href = config.protocol + '//' + config.hostname + '/';
+config.href = config.protocol + '//' + config.hostname;
 if ('80' !== String(config.port)) {
   config.href = config.href + ':' + config.port;
 }
+config.href += '/';
 
 server = http.createServer(resizer);
 server.listen(config.port, function () {
