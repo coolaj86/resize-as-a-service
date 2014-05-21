@@ -14,6 +14,9 @@ Tada!
   * <http://images.example.com/api/resize/width/{{width}}?url={{url}}>
   * <http://images.example.com/api/resize/height/{{height}}?url={{url}}>
 
+Note that the local copy of the image will a direct download of the original image,
+but as of right now the resized version will be jpg, regardless of the original image type.
+
 Install & Usage
 ===
 
@@ -50,6 +53,8 @@ How it works
   * Then it issues a 302 redirect to google's image caching api, pointing to the locally saved file
   * Google requests the saved file, resizes it, and stores it in the cache
   * It's not known if google limits the number of requests, but if it does it will redirect back the file directly and the file will be served without resizing
+
+All of that may change in the future.
 
 Copyright and license
 ===
