@@ -7,6 +7,8 @@ function escapeRegExp(str) {
 var config = require('./config')
   , connect = require('connect')
   , crypto = require('crypto')
+  , qs = require('qs')
+  , serveStatic = require('serve-static')
   //, escapeRegExp = require('escape-regexp')
   , fs = require('fs')
   , app = connect()
@@ -18,12 +20,28 @@ var config = require('./config')
   , imageBaseRe = new RegExp(escapeRegExp('^' + imageBaseUrl), 'i')
   , googleBaseUrl = 'https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy'
   , imagesDir = path.join(__dirname, 'images')
-  , staticServer
-  ;
+  , pagesDir = path.join(__dirname, 'public')
+  , urlrouter = require('connect_router')
+  , urlquery = function query(options){
+      return function query(req, res, next){
+        if (req.query) {
+          next();
+          return;
+        }
 
-if (!connect.router) {
-  connect.router = require('connect_router');
-}
+        var index
+          ;
+
+        index = req.url.indexOf('?');
+        req.query = (-1 !== index)
+          ? qs.parse(req.url.substr(index + 1).query, options)
+          : {}
+          ;
+
+        next();
+      };
+    }
+  ;
 
 // ?container=focus&resize_w=192&url={{myImage || 'http://placehold.it/150x150'}}
 
@@ -142,13 +160,13 @@ function route(rest) {
   rest.get('/resize/height/:height', resize);
 }
 
-staticServer = connect.static(imagesDir);
 app
   // TODO download resized image from Google
   // TODO mangle URL and pass to local static server
-  .use(connect.query())
-  .use('/api', connect.router(route))
-  .use('/', staticServer)
+  .use(urlquery())
+  .use('/api', urlrouter(route))
+  .use('/', serveStatic(imagesDir))
+  .use('/', serveStatic(pagesDir))
   ;
 
 module.exports = app;
