@@ -34,7 +34,7 @@ var config = require('./config')
 
         index = req.url.indexOf('?');
         req.query = (-1 !== index)
-          ? qs.parse(req.url.substr(index + 1).query, options)
+          ? qs.parse(req.url.substr(index + 1), options)
           : {}
           ;
 
@@ -49,12 +49,13 @@ function route(rest) {
   function resize(req, res, next) {
     // security check
     if (/\.\./.test(req.url)) {
+      console.error('[resize-as-a-service] attack? ' + req.url);
       next();
       return;
     }
 
     if (!req.query.url || (!req.params.width && !req.params.height)) {
-      res.end(JSON.stringify({ error: { message: "you must specify url={{url}} and height or width" } }));
+      res.end(JSON.stringify({ error: { message: "you must specify url={{url}} and height or width", query: req.query } }));
       return;
     }
 
@@ -167,6 +168,10 @@ app
   .use('/api', urlrouter(route))
   .use('/', serveStatic(imagesDir))
   .use('/', serveStatic(pagesDir))
+  .use(function (req, res) {
+    res.statusCode = 404;
+    res.end(req.url + ' not found');
+  })
   ;
 
 module.exports = app;
