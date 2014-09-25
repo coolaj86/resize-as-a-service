@@ -1,7 +1,8 @@
 'use strict';
 
 module.exports = {
-  hostname: 'images.example.com'
+  hostname: 'localhost'
 , port: '3000'
-, href: 'http://images.example.com:3000/'
+, href: 'http://localhost:3000'
+, imagesFolder: __dirname + '/images/'
 };
