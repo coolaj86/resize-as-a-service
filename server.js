@@ -57,7 +57,7 @@ module.exports = function(config) {
       status(422);
     }
 
-    if (!width && !height) {
+    if (isNaN(+width) || isNaN(+height)) {
       status(422);
     }
 
