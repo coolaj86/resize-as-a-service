@@ -142,7 +142,7 @@ module.exports = function(config) {
       // probably has no way of parsing this JSON?
       res.end(JSON.stringify({
         error: {
-          message: '' + code + http.STATUS_CODES[code]
+          message: '' + code + ' ' + http.STATUS_CODES[code]
         }
       }));
     }
