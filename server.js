@@ -111,13 +111,16 @@ module.exports = function(config) {
           height = size.height * (width / size.width);
         }
 
+        var result
+          ;
+
         if (crop) {
-          var result = image
+          result = image
             .crop(width, height,
                   (size.width - width) / 2, (size.height - height) / 2)
             ;
         } else {
-          var result = image
+          result = image
             .resize(width, height)
             ;
         }
@@ -129,7 +132,7 @@ module.exports = function(config) {
               console.error(err);
               status(500);
 
-              return
+              return;
             }
 
             redirect();
@@ -171,7 +174,7 @@ module.exports = function(config) {
       res.end();
     }
 
-    function status(code, message) {
+    function status(code) {
       res.statusCode = code;
 
       // why are we responding with JSON when the client is expecting images and
