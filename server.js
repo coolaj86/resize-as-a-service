@@ -91,6 +91,13 @@ module.exports = function(config) {
         .resize(width, height)
         .noProfile()
         .write(images + filename, function(err) {
+          if (err) {
+            console.error(err);
+            status(500);
+
+            return
+          }
+
           redirect();
         });
     }
