@@ -4,19 +4,21 @@ var  statik = require('serve-static')
   , connect = require('connect')
   , request = require('request')
   ,  crypto = require('crypto')
+  ,    http = require('http')
   ,    path = require('path')
   ,      fs = require('fs')
   ,      qs = require('qs')
   ;
 
 module.exports = function(config) {
-  var imagesFolder = config.imagesFolder || path.resolve('./images')
+  var images = config.imagesFolder || path.resolve('./images')
+    ,  limit = config.limit || 0x2ffff // 255kb
     ;
 
   var app = connect()
     .use(query)
     .use('/api/images', resize)
-    .use('/images', statik(imagesFolder))
+    .use('/images', statik(images))
     ;
 
   function query(req, res, next) {
@@ -51,76 +53,82 @@ module.exports = function(config) {
     }
 
     if (!url) {
-      handleError(400, "you must specify url={{url}}");
+      status(422);
     }
 
     if (!width && !height) {
-      handleError(400, "you must specify width={{width}} or height={{height}}");
+      status(422);
     }
 
-    request(url, {encoding: null}, function(err, resp, body) {
-      if (err) { // TODO: make this behavior
-        console.log('[ERROR GET]');
-        console.error(err);
-        console.error(body);
+    var match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
+      ;
 
-        handleError(500, "an unknown error occured when retriving your image");
+    if (!match) {
+      status(415);
 
-        return;
+      return;
+    }
+
+    // TODO: sync .jp{,e}g and .j{,f}if
+    var extension = match[0].toLowerCase()
+      ,        id = url + width + height
+      ,      hash = crypto.createHash('md5').update(id).digest('hex')
+      ,  filename = hash + extension
+      ,  filepath = path.resolve(images, filename)
+      ;
+
+    fs.exists(filepath, function(exists) {
+      if (exists) {
+        redirect();
+      } else {
+        create();
       }
-
-      if (resp.statusCode >= 400) {
-        handleError(resp.statusCode,
-                    "an unknown error occured when retriving your image");
-
-        return;
-      }
+    });
 
       var match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
         ;
 
-      if (!match) { // TODO: make this sound better
-        handleError("file extension unknown", 400);
-        return;
-      }
+    function create() {
+      request(url, {encoding: null}, function(err, resp, body) {
+        if (err) {
+          console.error(err);
+          status(500);
 
-      // TODO: sync .jp{,e}g and .j{,f}if
-      var hash = crypto.createHash('md5').update(body).digest('hex')
-        , extension = match[0].toLowerCase()
-        , filepath = path.join(config.imagesFolder, hash + extension)
-        ;
-
-      handleImage(filepath, body);
-    });
-
-    // this is where the magic happens! (get it?)
-    function handleImage(filepath, body) {
-      fs.exists(filepath, function(exists) {
-        if (exists) {
-          fs.createReadStream(filepath).pipe(res); // TODO
-        } else {
-          fs.writeFile(filepath, body, function(err) {
-            if (err) {
-              // TODO
-              console.error(err);
-              handleError(500, "there was a problem writing the file");
-              return;
-            }
-
-            handleImage(filepath, body);
-          });
+          return;
         }
+
+        if (resp.statusCode >= 400) {
+          handleError(resp.statusCode);
+
+          return;
+        }
+
+        if (body.length > limit) {
+          status(413);
+        }
+
+        write(body);
       });
     }
 
-    function handleError(code, message) {
+    function redirect() {
+      var address = config.href + 'images/' + filename
+        ;
+
+      res.writeHead(301, { Location: address });
+      res.write('' + 301 + ' ' + http.STATUS_CODES[301] + ' ' + address + '\n');
+
+      res.end();
+    }
+
+    function status(code, message) {
       res.statusCode = code;
 
       // why are we responding with JSON when the client is expecting images and
       // probably has no way of parsing this JSON?
       res.end(JSON.stringify({
         error: {
-          message: message
+          message: '' + code + http.STATUS_CODES[code]
         }
       }));
     }
