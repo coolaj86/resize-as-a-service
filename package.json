@@ -23,6 +23,7 @@
   "homepage": "https://github.com/coolaj86/resize-as-a-service",
   "dependencies": {
     "connect": "^3.2.0",
+    "gm": "^1.16.0",
     "qs": "^2.2.4",
     "request": "^2.44.0",
     "serve-static": "^1.6.3"

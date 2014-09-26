@@ -8,6 +8,7 @@ var  statik = require('serve-static')
   ,    path = require('path')
   ,      fs = require('fs')
   ,      qs = require('qs')
+  ,      gm = require('gm')
   ;
 
 module.exports = function(config) {
@@ -85,8 +86,14 @@ module.exports = function(config) {
       }
     });
 
-      var match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
-        ;
+    function write(image) {
+      gm(image)
+        .resize(width, height)
+        .noProfile()
+        .write(images + filename, function(err) {
+          redirect();
+        });
+    }
 
     function create() {
       request(url, {encoding: null}, function(err, resp, body) {
