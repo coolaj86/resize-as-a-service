@@ -101,13 +101,13 @@ module.exports = function(config) {
 
         if (width != null) {
           width = Math.min(width, size.width);
-        } else {
-          width = size.width;
+        } else if (crop) {
+          width = size.width * (height / size.height);
         }
 
         if (height != null) {
           height = Math.min(height, size.height);
-        } else {
+        } else if (crop) {
           height = size.height * (width / size.width);
         }
 
