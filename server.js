@@ -105,7 +105,7 @@ module.exports = function(config) {
         }
 
         if (resp.statusCode >= 400) {
-          handleError(resp.statusCode);
+          status(resp.statusCode);
 
           return;
         }
