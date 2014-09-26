@@ -88,7 +88,7 @@ module.exports = function(config) {
 
     function write(image) {
       gm(image)
-        .resize(width, height)
+        .resize(+width, +height, '!')
         .noProfile()
         .write(images + filename, function(err) {
           if (err) {
