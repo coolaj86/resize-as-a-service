@@ -42,6 +42,7 @@ module.exports = function(config) {
 
   function resize(req, res, next) {
     var    url = req.query.url
+      ,   crop = req.query.crop
       ,  width = req.query.w
       , height = req.query.h
       ;
@@ -57,7 +58,7 @@ module.exports = function(config) {
       status(422);
     }
 
-    if (isNaN(+width) || isNaN(+height)) {
+    if (isNaN(+width) && isNaN(+height)) {
       status(422);
     }
 
@@ -72,7 +73,7 @@ module.exports = function(config) {
 
     // TODO: sync .jp{,e}g and .j{,f}if
     var extension = match[0].toLowerCase()
-      ,        id = url + width + height
+      ,        id = url + width + height + crop
       ,      hash = crypto.createHash('md5').update(id).digest('hex')
       ,  filename = hash + extension
       ,  filepath = path.resolve(images, filename)
@@ -86,20 +87,55 @@ module.exports = function(config) {
       }
     });
 
-    function write(image) {
-      gm(image)
-        .resize(+width, +height)
-        .noProfile()
-        .write(images + filename, function(err) {
-          if (err) {
-            console.error(err);
-            status(500);
+    function write(blob) {
+      var image = gm(blob)
+        ;
 
-            return
-          }
+      image.size(function(err, size) {
+        if (err) {
+          console.error(err);
+          status(500);
 
-          redirect();
-        });
+          return;
+        }
+
+        if (width != null) {
+          width = Math.min(width, size.width);
+        } else {
+          width = size.width;
+        }
+
+        if (height != null) {
+          height = Math.min(height, size.height);
+        } else {
+          height = size.height * (width / size.width);
+        }
+
+        if (crop) {
+          var result = image
+            .crop(width, height,
+                  (size.width - width) / 2, (size.height - height) / 2)
+            ;
+        } else {
+          var result = image
+            .resize(width, height)
+            ;
+        }
+
+        result
+          .noProfile()
+          .write(images + filename, function(err) {
+            if (err) {
+              console.error(err);
+              status(500);
+
+              return
+            }
+
+            redirect();
+          })
+          ;
+      });
     }
 
     function create() {
