@@ -13,6 +13,7 @@ function process(conf, url, opts) {
     ,       height = opts.height
     ,        width = opts.width
     , targetFormat = opts.targetFormat
+    ,      quality = opts.quality
     //, originalFilename = origsum
     //, targetBaseName: hash
     //,      crop
@@ -29,9 +30,6 @@ function process(conf, url, opts) {
 
 
   function retrieveOriginal(ourl, linkpath) {
-    console.log('ourl, linkpath');
-    console.log(ourl, linkpath);
-
     // fs.existsAsync is reverse because error fires when exists is true
     return fs.existsAsync(linkpath).then(function (/*exists = false*/) {
       return requestA(ourl, { encoding: null }).spread(function (resp, body) {
@@ -99,8 +97,6 @@ function process(conf, url, opts) {
         }
 
         return n.then(function () {
-          console.log('isNewFormat', isNewFormat, targetFormat);
-
           // fs.existsAsync is reverse because error fires when exists is true
           return fs.existsAsync(newpath).then(function (/*exists = false*/) {
             if (opts.targetBaseName === opts.originalFilename || realpath === newpath) {
@@ -117,8 +113,6 @@ function process(conf, url, opts) {
   }
 
   function resizeAndSaveImage(image, newpath, filename, isNewFormat) {
-    console.log('resize, filename', filename);
-
     // resize goals:
     // if width is given, auto adjust for height
     // if height is given, auto adjust for width
@@ -139,6 +133,10 @@ function process(conf, url, opts) {
 
       if (isNewFormat) {
         image.setFormat(targetFormat);
+      }
+
+      if (quality) {
+        image.quality(quality);
       }
 
       return image.writeAsync(newpath).then(function () {

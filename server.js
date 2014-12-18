@@ -48,10 +48,15 @@ module.exports.create = function (config) {
     var          url = req.query.url
       ,         crop = req.query.crop || ''
       , targetFormat = (req.query.format || '').toLowerCase()
-      //,      quality = (req.query.quality || null)
+      ,      quality = (req.query.quality || null)
       ,        width = parseInt(req.query.w || 0, 10)
       ,       height = parseInt(req.query.h || 0, 10)
-      ,           id = url + (width||'') + (height||'') + (crop||'') + (targetFormat||'')
+      ,           id = url
+                        + (width||'')
+                        + (height||'')
+                        + (crop||'')
+                        + (targetFormat||'')
+                        + (quality||'')
       ,         hash = crypto.createHash('md5').update(id).digest('hex')
       ,      origsum = crypto.createHash('md5').update(url).digest('hex')
       ,        match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
@@ -67,7 +72,7 @@ module.exports.create = function (config) {
 
     // security check
     if (/\.\./.test(url)) {
-      console.log('[resize-as-a-servize] attack? ' + url);
+      console.error('[resize-as-a-servize] attack? ' + url);
       next(); // TODO: fix this behavior
 
       return;
@@ -101,12 +106,11 @@ module.exports.create = function (config) {
     , originalFilename: origsum
     , targetBaseName: hash
     , targetFormat: targetFormat
+    , quality: quality
     };
     return process(conf, url, opts).then(function (targetFilename) {
-      console.log('req.originalUrl', req.originalUrl);
-      req.originalUrl = '/' + imagesRoute + '/' + targetFilename;
+      req.originalUrl = imagesRoute + '/' + targetFilename;
       req.url = '/' + imagesRoute + '/' + targetFilename;
-      console.log('[1] req.url', req.url);
       next();
 
       return;
@@ -119,14 +123,9 @@ module.exports.create = function (config) {
     });
   }
 
-  console.log('apiRoute', apiRoute);
   app
     .use(query())
     .use(apiRoute, resize)
-    .use(function (req, res, next) {
-      console.log('[2] req.url', req.url);
-      next();
-    })
     .use(apiRoute + imagesRoute, statik(imagesFolder))
     .use(imagesRoute, statik(imagesFolder))
     ;
