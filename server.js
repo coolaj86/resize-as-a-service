@@ -1,178 +1,37 @@
 'use strict';
 
-var  statik = require('serve-static')
-  , connect = require('connect')
-  , request = require('request')
-  ,  crypto = require('crypto')
-  ,    http = require('http')
-  ,    path = require('path')
-  ,      fs = require('fs')
-  ,      qs = require('qs')
-  ,      gm = require('gm')
+var   crypto = require('crypto')
+  ,  connect = require('connect')
+  ,   statik = require('serve-static')
+  ,    query = require('connect-query')
+  ,     http = require('http')
+  ,     path = require('path')
+  ,  process = require('./process-image')
   ;
 
-module.exports = function(config) {
-  var images = config.imagesFolder || path.resolve('./images')
-    ,  limit = config.limit || 0x2ffff // 255kb
+module.exports = function (config) {
+  config = config || {};
+
+  var imagesFolder = config.imagesFolder || path.resolve(__dirname, 'images')
+    , imagesRoute = config.imagesRoute || '/images'
+    , apiRoute = config.apiRoute || '/api'
+    //,  limit = config.limit || 255 * (1024) // 255kb
+    ,    app = connect()
     ;
-
-  var app = connect()
-    .use(query)
-    .use('/api/images', resize)
-    .use('/images', statik(images))
-    ;
-
-  function query(req, res, next) {
-    if (req.query) {
-      next();
-      return;
-    }
-
-    var parts = req.url.split('?')
-      ;
-
-    if (parts.length) {
-      req.query = qs.parse(parts[1]);
-    } else {
-      req.query = {};
-    }
-
-    next();
-  }
 
   function resize(req, res, next) {
-    var    url = req.query.url
-      ,   crop = req.query.crop
-      ,  width = req.query.w
-      , height = req.query.h
-      ;
 
-    // security check
-    if (/\.\./.test(url)) {
-      console.log('[resize-as-a-servize] attack? ' + url);
-      next(); // TODO: fix this behavior
-      return;
-    }
-
-    if (!url) {
-      status(422);
-    }
-
-    if (isNaN(+width) && isNaN(+height)) {
-      status(422);
-    }
-
-    var match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
-      ;
-
-    if (!match) {
-      status(415);
-
-      return;
-    }
-
-    // TODO: sync .jp{,e}g and .j{,f}if
-    var extension = match[0].toLowerCase()
-      ,        id = url + width + height + crop
-      ,      hash = crypto.createHash('md5').update(id).digest('hex')
-      ,  filename = hash + extension
-      ,  filepath = path.resolve(images, filename)
-      ;
-
-    fs.exists(filepath, function(exists) {
-      if (exists) {
-        redirect();
-      } else {
-        create();
-      }
-    });
-
-    function write(blob) {
-      var image = gm(blob)
-        ;
-
-      image.size(function(err, size) {
-        if (err) {
-          console.error(err);
-          status(500);
-
-          return;
-        }
-
-        if (width != null) {
-          width = Math.min(width, size.width);
-        } else if (crop) {
-          width = size.width * (height / size.height);
-        }
-
-        if (height != null) {
-          height = Math.min(height, size.height);
-        } else if (crop) {
-          height = size.height * (width / size.width);
-        }
-
-        var result
-          ;
-
-        if (crop) {
-          result = image
-            .crop(width, height,
-                  (size.width - width) / 2, (size.height - height) / 2)
-            ;
-        } else {
-          result = image
-            .resize(width, height)
-            ;
-        }
-
-        result
-          .noProfile()
-          .write(images + filename, function(err) {
-            if (err) {
-              console.error(err);
-              status(500);
-
-              return;
-            }
-
-            redirect();
-          })
-          ;
-      });
-    }
-
-    function create() {
-      request(url, {encoding: null}, function(err, resp, body) {
-        if (err) {
-          console.error(err);
-          status(500);
-
-          return;
-        }
-
-        if (resp.statusCode >= 400) {
-          status(resp.statusCode);
-
-          return;
-        }
-
-        if (body.length > limit) {
-          status(413);
-        }
-
-        write(body);
-      });
-    }
-
-    function redirect() {
-      var address = config.href + 'images/' + filename
+    /*
+    function redirect(fname) {
+      var address = (config.href) + imagesRoute + '/' + fname
         ;
 
       res.writeHead(301, { Location: address });
-      res.write('' + 301 + ' ' + http.STATUS_CODES[301] + ' ' + address + '\n');
+      res.write(301 + ' ' + http.STATUS_CODES[301] + ' ' + address + '\n');
 
       res.end();
     }
+    */
 
     function status(code) {
       res.statusCode = code;
@@ -185,7 +44,90 @@ module.exports = function(config) {
         }
       }));
     }
+
+    var          url = req.query.url
+      ,         crop = req.query.crop || ''
+      , targetFormat = (req.query.format || '').toLowerCase()
+      ,        width = parseInt(req.query.w || 0, 10)
+      ,       height = parseInt(req.query.h || 0, 10)
+      ,           id = url + (width||'') + (height||'') + (crop||'') + (targetFormat||'')
+      ,         hash = crypto.createHash('md5').update(id).digest('hex')
+      ,      origsum = crypto.createHash('md5').update(url).digest('hex')
+      ,        match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
+      ,         conf
+      ,         opts
+      ;
+
+    if (!url) {
+      status(422);
+
+      return;
+    }
+
+    // security check
+    if (/\.\./.test(url)) {
+      console.log('[resize-as-a-servize] attack? ' + url);
+      next(); // TODO: fix this behavior
+
+      return;
+    }
+
+    if (isNaN(width) || isNaN(height)) {
+      status(422);
+
+      return;
+    }
+
+    if (!match) {
+      status(415);
+
+      return;
+    }
+
+    if ('bmp' === targetFormat) {
+      status(422);
+
+      return;
+    }
+
+    /*
+    if (targetFormat) {
+      filename = hash + '.' + targetFormat;
+    } else {
+      filename = hash + '.' + extension;
+    }
+    */
+
+    conf = {
+      imagesFolder: imagesFolder
+    };
+    opts = {
+      width: width
+    , height: height
+    //, crop: crop
+    , originalFilename: origsum
+    , targetBaseName: hash
+    , targetFormat: targetFormat
+    };
+    return process(conf, url, opts).then(function (targetFilename) {
+      req.url = imagesRoute + '/' + targetFilename;
+      next();
+
+      return;
+    }).error(function (err) {
+      console.error('[e] resize 1');
+      console.error(err);
+      status(500);
+
+      throw err;
+    });
   }
+
+  app
+    .use(query)
+    .use(apiRoute, resize)
+    .use(imagesRoute, statik(imagesFolder))
+    ;
 
   return app;
 };

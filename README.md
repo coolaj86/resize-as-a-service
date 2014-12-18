@@ -1,5 +1,5 @@
 Resize-as-a-Service
-===
+===================
 
 When you've got a blog or a web application there are oft times that you
 want to store a local copy of some remote image you're linking to 
@@ -11,38 +11,51 @@ This does both.
 
 Tada!
 
-  * <http://images.example.com/api/resize/width/{{width}}?url={{url}}>
-  * <http://images.example.com/api/resize/height/{{height}}?url={{url}}>
+  * <http://resize.example.com/api/resize?w={{width}}&url={{url}}>
+  * <http://resize.example.com/api/resize?h={{height}}&url={{url}}>
+  * <http://resize.example.com/api/resize?h={{height}}&w={{width}}&url={{url}}>
+  * <http://resize.example.com/api/resize?url={{url}}&format={{png|jpg|gif}}&quality=85>
 
 Note that the local copy of the image will a direct download of the original image,
 but as of right now the resized version will be jpg, regardless of the original image type.
 
 Install & Usage
-===
+===============
 
 ```bash
 git clone git@github.com:coolaj86/resize-as-a-service.git
 pushd resize-as-a-service
 vim config.js # change host and port to your host and port
 
-node runner 3000
+node ./runner 3000
 ```
 
 If you generically want your pictures to have a width of 500px
 then prefix all of your image URLs with the following:
 
 ```
-http://images.example.com/api/resize/width/500?url=
+http://images.example.com/api/resize?w=500&url=
 ```
 
 If I were linking to an image from imgur I would do so like this:
 
 ```
-http://images.example.com/api/resize/width/500?url=http://i.imgur.com/b5S2Ga1.png
+http://images.example.com/api/resize?w=500?url=http://i.imgur.com/b5S2Ga1.png
 ```
 
 For best results you may wish to call `encodeURIComponent(picUrl)`
 so that the server isn't confused by excess `?` and `&`.
+
+Configuration
+=============
+
+```javascript
+{ apiRoute: '/api'
+, mountedAt: null // i.e. /resize
+, imageRoute: '/assets'
+, imageFolder: path.join(__dirname, '/images')
+}
+```
 
 How it works
 ===
