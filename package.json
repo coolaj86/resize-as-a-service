@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/coolaj86/resize-as-a-service",
   "dependencies": {
+    "bluebird": "^2.3.11",
     "connect": "^3.2.0",
+    "connect-query": "^0.2.0",
     "gm": "^1.17.0",
     "qs": "^2.2.4",
     "request": "^2.44.0",

@@ -6,10 +6,10 @@ var   crypto = require('crypto')
   ,    query = require('connect-query')
   ,     http = require('http')
   ,     path = require('path')
-  ,  process = require('./process-image')
+  ,  process = require('./process-image').process
   ;
 
-module.exports = function (config) {
+module.exports.create = function (config) {
   config = config || {};
 
   var imagesFolder = config.imagesFolder || path.resolve(__dirname, 'images')
@@ -48,6 +48,7 @@ module.exports = function (config) {
     var          url = req.query.url
       ,         crop = req.query.crop || ''
       , targetFormat = (req.query.format || '').toLowerCase()
+      //,      quality = (req.query.quality || null)
       ,        width = parseInt(req.query.w || 0, 10)
       ,       height = parseInt(req.query.h || 0, 10)
       ,           id = url + (width||'') + (height||'') + (crop||'') + (targetFormat||'')
@@ -90,14 +91,6 @@ module.exports = function (config) {
       return;
     }
 
-    /*
-    if (targetFormat) {
-      filename = hash + '.' + targetFormat;
-    } else {
-      filename = hash + '.' + extension;
-    }
-    */
-
     conf = {
       imagesFolder: imagesFolder
     };
@@ -110,7 +103,10 @@ module.exports = function (config) {
     , targetFormat: targetFormat
     };
     return process(conf, url, opts).then(function (targetFilename) {
-      req.url = imagesRoute + '/' + targetFilename;
+      console.log('req.originalUrl', req.originalUrl);
+      req.originalUrl = '/' + imagesRoute + '/' + targetFilename;
+      req.url = '/' + imagesRoute + '/' + targetFilename;
+      console.log('[1] req.url', req.url);
       next();
 
       return;
@@ -123,9 +119,15 @@ module.exports = function (config) {
     });
   }
 
+  console.log('apiRoute', apiRoute);
   app
-    .use(query)
+    .use(query())
     .use(apiRoute, resize)
+    .use(function (req, res, next) {
+      console.log('[2] req.url', req.url);
+      next();
+    })
+    .use(apiRoute + imagesRoute, statik(imagesFolder))
     .use(imagesRoute, statik(imagesFolder))
     ;
 

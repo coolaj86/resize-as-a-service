@@ -23,6 +23,14 @@ Install & Usage
 ===============
 
 ```bash
+# Ubunut
+sudo apt-get install graphicsmagick imagemagick
+
+# OS X
+brew install graphicsmagick imagemagick
+```
+
+```bash
 git clone git@github.com:coolaj86/resize-as-a-service.git
 pushd resize-as-a-service
 vim config.js # change host and port to your host and port

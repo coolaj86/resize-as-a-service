@@ -1,12 +1,15 @@
 'use strict';
 
-var resizer = require('./server')
+var http = require('http')
+  , resizer = require('./server')
   , connect = require('connect')
+  , app
   , config = require('./config')
+  , server
   ;
 
 config.protocol = 'http:';
-config.port = config.port || process.argv[2] || 5050;
+config.port = config.port || process.argv[2] || 8080;
 config.href = config.protocol + '//' + config.hostname;
 
 if ('80' !== String(config.port)) {
@@ -15,8 +18,10 @@ if ('80' !== String(config.port)) {
 
 config.href += '/';
 
-connect()
-  .use(resizer(config))
-  .listen(config.port, function() {
-    console.log('Listening on port ' + config.port);
-  });
+app = connect();
+app.use(resizer.create(config));
+
+server = http.createServer(app);
+server.listen(config.port, function() {
+  console.log('Listening on port ' + config.port);
+});

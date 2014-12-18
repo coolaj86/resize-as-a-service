@@ -9,7 +9,6 @@ var PromiseA = require('bluebird').Promise
   ;
 
 function process(conf, url, opts) {
-
   var     origpath = path.resolve(conf.imagesFolder, opts.originalFilename)
     ,       height = opts.height
     ,        width = opts.width
@@ -20,7 +19,7 @@ function process(conf, url, opts) {
     //,  filename
     ;
 
-/*
+  /*
   // TODO: sync .jp{,e}g and .j{,f}if
   //sourceFormat = match && match[1].toLowerCase().replace(/(jpe?g|jf?if)/i, 'jpg');
   if ('bmp' === sourceFormat) {
@@ -29,12 +28,12 @@ function process(conf, url, opts) {
   */
 
 
-  function retrieveOriginal(ourl, opath) {
-    console.log('ourl, opath');
-    console.log(ourl, opath);
+  function retrieveOriginal(ourl, linkpath) {
+    console.log('ourl, linkpath');
+    console.log(ourl, linkpath);
 
     // fs.existsAsync is reverse because error fires when exists is true
-    return fs.existsAsync(opath).then(function (/*exists = false*/) {
+    return fs.existsAsync(linkpath).then(function (/*exists = false*/) {
       return requestA(ourl, { encoding: null }).spread(function (resp, body) {
         if (resp.statusCode >= 400) {
           return PromiseA.reject(resp.statusCode);
@@ -48,31 +47,26 @@ function process(conf, url, opts) {
         }
         */
 
-        return fs.writeFileAsync(opath, body).then(function () {
-          /*
-          if (!(width || height || targetFormat)) {
-            crop = '';
-
-            return PromiseA.resolve();
-          }
-          */
-
-          return retrieveResized(opath, body);
-        });
+        return retrieveResized(linkpath, null, body);
       });
     }).error(function (/*exists = true*/) {
-      return retrieveResized(opath, null);
+      // TODO put linkpath into db
+      return fs.readFileAsync(linkpath, 'utf8').then(function (realname) {
+        return retrieveResized(linkpath, realname, null);
+      });
     });
   }
 
-  function retrieveResized(opath, body) {
-    var n
+  function retrieveResized(linkpath, realname, body) {
+    var realpath
+      , n
       ;
 
-    if (body) {
+    if (realname) {
+      realpath = path.resolve(conf.imagesFolder, realname);
+      n = fs.readFileAsync(realpath);
+    } else if (body) {
       n = PromiseA.resolve(body);
-    } else {
-      n = fs.readFileAsync(opath);
     }
 
     return n.then(function (blob) {
@@ -92,26 +86,38 @@ function process(conf, url, opts) {
         var filename = opts.targetBaseName + '.' + (targetFormat || sourceFormat)
           , newpath = path.resolve(conf.imagesFolder, filename)
           , isNewFormat = targetFormat && (targetFormat !== sourceFormat)
+          , n
           ;
 
-        console.log('isNewFormat', isNewFormat, targetFormat);
+        if (!realpath) {
+          realpath = linkpath + '.' + sourceFormat;
+          n = fs.writeFileAsync(realpath, blob).then(function () {
+            return fs.writeFileAsync(linkpath, opts.originalFilename + '.' + sourceFormat, 'utf8');
+          });
+        } else {
+          n = PromiseA.resolve();
+        }
 
-        // fs.existsAsync is reverse because error fires when exists is true
-        return fs.existsAsync(newpath).then(function (/*exists = false*/) {
-          if (opts.targetBaseName === opts.originalFilename || opath === newpath) {
-            return PromiseA.resolve(opts.targetBaseName);
-          }
+        return n.then(function () {
+          console.log('isNewFormat', isNewFormat, targetFormat);
 
-          return resizeAndSaveImage(image, newpath, filename, isNewFormat);
-        }).error(function(/*exists = true*/) {
-          return PromiseA.resolve(opts.targetBaseName);
+          // fs.existsAsync is reverse because error fires when exists is true
+          return fs.existsAsync(newpath).then(function (/*exists = false*/) {
+            if (opts.targetBaseName === opts.originalFilename || realpath === newpath) {
+              return PromiseA.resolve(filename/*opts.targetBaseName*/);
+            }
+
+            return resizeAndSaveImage(image, newpath, filename, isNewFormat);
+          }).error(function(/*exists = true*/) {
+            return PromiseA.resolve(filename/*opts.targetBaseName*/);
+          });
         });
       });
     });
   }
 
   function resizeAndSaveImage(image, newpath, filename, isNewFormat) {
-    console.log('resize');
+    console.log('resize, filename', filename);
 
     // resize goals:
     // if width is given, auto adjust for height
