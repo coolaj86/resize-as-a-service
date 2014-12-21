@@ -19,6 +19,11 @@ Tada!
 Note that the local copy of the image will a direct download of the original image,
 but as of right now the resized version will be jpg, regardless of the original image type.
 
+Other parameters
+
+  * &refresh=86400 - the cache for this image will expire after one day (86400 seconds)
+  * &state=123 - never expire the cache for this image and save it as state 123
+
 Install & Usage
 ===============
 
