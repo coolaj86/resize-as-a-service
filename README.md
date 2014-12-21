@@ -11,18 +11,36 @@ This does both.
 
 Tada!
 
-  * <http://resize.example.com/api/resize?w={{width}}&url={{url}}>
-  * <http://resize.example.com/api/resize?h={{height}}&url={{url}}>
-  * <http://resize.example.com/api/resize?h={{height}}&w={{width}}&url={{url}}>
+  * <http://resize.example.com/api/resize?width={{width}}&url={{url}}>
+  * <http://resize.example.com/api/resize?height={{height}}&url={{url}}>
+  * <http://resize.example.com/api/resize?height={{height}}&width={{width}}&url={{url}}>
   * <http://resize.example.com/api/resize?url={{url}}&format={{png|jpg|gif}}&quality=85>
 
-Note that the local copy of the image will a direct download of the original image,
-but as of right now the resized version will be jpg, regardless of the original image type.
+NOTE: the local cache of the image will include a direct download of the original image as well as the modified image.
 
-Other parameters
+NOTE: resize will only make images smaller, not larger.
 
-  * &refresh=86400 - the cache for this image will expire after one day (86400 seconds)
+All Parameters
+--------------
+
+  * &height=100 - bound the height to 100px and adjust the width proportionally
+  * &width=150 - bound the width to 150px and adjust the height proportionally
+  * &url=`encodeURIComponent('http://example.com/image.png')` - the image to cache / resize
+    * NOTE: all URLs SHOULD be URI encoded, but URLs with `?` and `&` MUST be encoded.
+  * &format=jpg|png|gif - convert to this format
+  * &quality=85 - quality (jpg/gif) or compression (png) level
+  * &refresh=86400 - the image will be checked for updates when it is accessed at least one day (86400 seconds) later
+    * NOTE: if there is an error retrieving the new image, the cached copy will be used
   * &state=123 - never expire the cache for this image and save it as state 123
+
+### state
+
+Once an image is cached the source image will not be checked for updates
+(unless refresh is specified).
+
+If you know that image has changed since it was cached and you want to use
+the newer image, specify a state parameter. If that state doesn't exist
+the image will be redownloaded and the result will be cached as that state.
 
 Install & Usage
 ===============
