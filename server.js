@@ -12,7 +12,8 @@ var   crypto = require('crypto')
 module.exports.create = function (config) {
   config = config || {};
 
-  var imagesFolder = config.imagesFolder || path.resolve(__dirname, 'images')
+  var imagesFolder = config.imagesFolder || path.resolve(__dirname, 'images', 'resized')
+    , originalsFolder = config.originalsFolder || path.resolve(__dirname, 'images', 'originals')
     , imagesRoute = config.imagesRoute || '/images'
     , apiRoute = config.apiRoute || '/api'
     //,  limit = config.limit || 255 * (1024) // 255kb
@@ -98,6 +99,7 @@ module.exports.create = function (config) {
 
     conf = {
       imagesFolder: imagesFolder
+    , originalsFolder: originalsFolder
     };
     opts = {
       width: width
@@ -108,9 +110,10 @@ module.exports.create = function (config) {
     , targetFormat: targetFormat
     , quality: quality
     };
-    return process(conf, url, opts).then(function (targetFilename) {
-      req.originalUrl = imagesRoute + '/' + targetFilename;
-      req.url = '/' + imagesRoute + '/' + targetFilename;
+    return process(conf, url, opts).then(function (data) {
+      // TODO use different routes
+      req.originalUrl = imagesRoute + '/' + data.filename;
+      req.url = '/' + imagesRoute + '/' + data.filename;
       next();
 
       return;
@@ -126,8 +129,12 @@ module.exports.create = function (config) {
   app
     .use(query())
     .use(apiRoute, resize)
+    // resized
     .use(apiRoute + imagesRoute, statik(imagesFolder))
     .use(imagesRoute, statik(imagesFolder))
+    // originals
+    .use(apiRoute + imagesRoute, statik(originalsFolder))
+    .use(imagesRoute, statik(originalsFolder))
     ;
 
   return app;
