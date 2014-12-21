@@ -52,14 +52,17 @@ module.exports.create = function (config) {
       ,      quality = (req.query.quality || null)
       ,        width = parseInt(req.query.w || 0, 10)
       ,       height = parseInt(req.query.h || 0, 10)
+      ,      refresh = parseInt(req.query.refresh || 0, 10)
+      ,        state = req.query.state || ''
       ,           id = url
+                        + (state||'')
                         + (width||'')
                         + (height||'')
                         + (crop||'')
                         + (targetFormat||'')
                         + (quality||'')
       ,         hash = crypto.createHash('md5').update(id).digest('hex')
-      ,      origsum = crypto.createHash('md5').update(url).digest('hex')
+      ,      origsum = crypto.createHash('md5').update(url + (state||'')).digest('hex')
       ,        match = url.match(/\.(jpe?g|png|ico|gif|tiff?|jf?if)(?=[^.]*$)/i)
       ,         conf
       ,         opts
@@ -109,6 +112,8 @@ module.exports.create = function (config) {
     , targetBaseName: hash
     , targetFormat: targetFormat
     , quality: quality
+    , refresh: refresh
+    , state: state
     };
     return process(conf, url, opts).then(function (data) {
       // TODO use different routes

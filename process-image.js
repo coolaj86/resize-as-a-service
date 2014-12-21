@@ -36,7 +36,7 @@ function process(conf, url, opts) {
     });
   }
   function dbSet(key, value) {
-    return fs.writeFileAsync(key, JSON.stringify(value), 'utf8');
+    return fs.writeFileAsync(key, JSON.stringify(value, null, '  '), 'utf8');
   }
   /*
   function setFile(key, meta, blob) {
@@ -68,6 +68,7 @@ function process(conf, url, opts) {
           .replace(/(jpe?g|jf?if)/i, 'jpg')
           ;
 
+        // TODO md5sum the data
         meta = {
           retrievedAt: Date.now()
         , size: blob.length
@@ -104,13 +105,13 @@ function process(conf, url, opts) {
       }
 
       return dbGet(linkpath).then(function (meta) {
-        var expirey = (orefresh || 24 * 60 * 60) * 1000
+        var expiresIn = orefresh && (orefresh * 1000)
           , data
           ;
 
         data = { meta: meta, image: null };
 
-        if (data.meta.state || (Date.now() - meta.retrievedAt) < expirey) {
+        if (data.meta.state || !expiresIn || (Date.now() - meta.retrievedAt) < expiresIn) {
           return data;
         }
 
