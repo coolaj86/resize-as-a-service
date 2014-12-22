@@ -1,7 +1,7 @@
 {
   "name": "resize-as-a-service",
-  "version": "0.1.1",
-  "description": "\"An image resizing API, useful for blogs and such\"",
+  "version": "1.0.0",
+  "description": "An image resizing API, useful for blogs and such",
   "main": "server",
   "scripts": {
     "test": "node runner"
