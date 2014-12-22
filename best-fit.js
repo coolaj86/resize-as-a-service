@@ -29,13 +29,13 @@ function bestMinFit(size, width, height) {
   rh = Math.min(1, (height || size.height) / size.height);
 
   if (rw < rh) {
-    console.log(rw);
+    //console.log(rw);
     newReal = { w: size.width * rw, h: size.height * rw };
   } else if (rh < rw) {
-    console.log(rh);
+    //console.log(rh);
     newReal = { w: size.width * rh, h: size.height * rh };
   } else {
-    console.log(1);
+    //console.log(1);
     newReal = { w: size.width, h: size.height };
   }
 

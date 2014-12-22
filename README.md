@@ -11,14 +11,22 @@ This does both.
 
 Tada!
 
-  * <http://resize.example.com/api/resize?width={{width}}&url={{url}}>
-  * <http://resize.example.com/api/resize?height={{height}}&url={{url}}>
-  * <http://resize.example.com/api/resize?height={{height}}&width={{width}}&url={{url}}>
-  * <http://resize.example.com/api/resize?url={{url}}&format={{png|jpg|gif}}&quality=85>
+  * /resize/api?width={{width}}&url={{url}}
+  * /resize/api?height={{height}}&url={{url}}
+  * /resize/api?height={{height}}&width={{width}}&url={{url}}
+  * /resize/api?format={{png|jpg|gif}}&quality=85&url={{url}}
 
 NOTE: the local cache of the image will include a direct download of the original image as well as the modified image.
 
 NOTE: resize will only make images smaller, not larger.
+
+For best results you may wish to call `encodeURIComponent(picUrl)`
+so that the server isn't confused by excess `?` and `&`.
+
+Example
+=======
+
+See <https://github.com/coolaj86/resize-as-a-service-example> for a 60-second tutorial.
 
 All Parameters
 --------------
@@ -46,36 +54,55 @@ Install & Usage
 ===============
 
 ```bash
-# Ubunut
+# Ubuntu
 sudo apt-get install graphicsmagick imagemagick
 
 # OS X
 brew install graphicsmagick imagemagick
 ```
 
-```bash
-git clone git@github.com:coolaj86/resize-as-a-service.git
-pushd resize-as-a-service
-vim config.js # change host and port to your host and port
 
-node ./runner 3000
+Example with Connect / Express
+
+```javascript
+'use strict';
+
+var http = require('http')
+  , serve = require('../server')
+  , port
+  , server
+  , connect = require('connect') // or express
+  , path = require('path')
+  , resizer = require('resize-as-a-service')
+  , app = connect()
+  , conf
+  ;
+
+port = port || process.argv[2] || 3000;
+
+conf = {
+  imagesFolder: path.resolve(__dirname, 'images', 'resized')
+, originalsFolder: path.resolve(__dirname, 'images', 'originals')
+, apiRoute: '/api'
+};
+
+app
+  .use('/resize', resizer.create(conf))
+  .use(function (req, res) {
+    res.end('You probably thought this was a path to a real image... Nope. Chuck Testa!');
+  })
+  ;
+
+server = http.createServer(serve.create());
+server.listen(port, function() {
+  console.log('Listening on port ' + port);
+});
 ```
 
-If you generically want your pictures to have a width of 500px
-then prefix all of your image URLs with the following:
 
-```
-http://images.example.com/api/resize?w=500&url=
-```
+* <https://github.com/coolaj86/resize-as-a-service-example/blob/master/bin/serve.js>
+* <https://github.com/coolaj86/resize-as-a-service-example/blob/master/server.js>
 
-If I were linking to an image from imgur I would do so like this:
-
-```
-http://images.example.com/api/resize?w=500?url=http://i.imgur.com/b5S2Ga1.png
-```
-
-For best results you may wish to call `encodeURIComponent(picUrl)`
-so that the server isn't confused by excess `?` and `&`.
 
 Configuration
 =============
@@ -92,13 +119,13 @@ How it works
 ===
 
   * Turns `url` into an md5 hash.
-  * Checks `./images` for the file by that hash + extension
-    * If the file doesn't exist, it downloads it
-  * Then it issues a 302 redirect to google's image caching api, pointing to the locally saved file
-  * Google requests the saved file, resizes it, and stores it in the cache
-  * It's not known if google limits the number of requests, but if it does it will redirect back the file directly and the file will be served without resizing
+  * Checks `originalsFolder` for the file metadata by that hash and hash + extension
+    * If the file doesn't exist, it downloads it and extracts metadata
+  * Then it turns the query parameters into a hash and checks for the metadata file
+    * If the file doesn't exist, it resizes the image
+    * Otherwise it passes the path to the static file server
 
-All of that may change in the future.
+Some of the internals may change in the future.
 
 Copyright and license
 ===

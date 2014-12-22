@@ -1,6 +1,6 @@
 'use strict';
 
-var fit = require('./best-fit').fit
+var fit = require('../best-fit').fit
   ;
 
 function bestMinFit(size, width, height) {
