@@ -6,6 +6,7 @@ var PromiseA = require('bluebird').Promise
   ,     path = require('path')
   ,       fs = PromiseA.promisifyAll(require('fs'))
   ,       gm = require('gm')
+  ,    sharp = require('sharp')
   ;
 
 function process(conf, url, opts) {
@@ -51,19 +52,20 @@ function process(conf, url, opts) {
         return PromiseA.reject(resp.statusCode);
       }
 
-      var image = gm(blob)
+      var image = sharp(blob)
         ;
 
-      image.formatAsync = PromiseA.promisify(image.format);
-      image.sizeAsync = PromiseA.promisify(image.size);
-      image.writeAsync = PromiseA.promisify(image.write);
+      /*image.formatAsync = PromiseA.promisify(image.me);
+      image.sizeAsync = PromiseA.promisify(image.size);*/
+      image.writeAsync = PromiseA.promisify(image.toFile);
 
-      return image.formatAsync().then(function(sourceFormat) {
+      return image.metadata().then(function(metadata) {
+
         var realpath
           , meta
           ;
 
-        sourceFormat = sourceFormat
+        var sourceFormat = metadata.format
           .toLowerCase()
           .replace(/(jpe?g|jf?if)/i, 'jpg')
           ;
@@ -147,10 +149,10 @@ function process(conf, url, opts) {
     if (data.image) {
       image = data.image;
     } else {
-      image = gm(path.resolve(conf.originalsFolder, opts.originalFilename + '.' + data.meta.format));
-      image.formatAsync = PromiseA.promisify(image.format);
-      image.sizeAsync = PromiseA.promisify(image.size);
-      image.writeAsync = PromiseA.promisify(image.write);
+      image = sharp(path.resolve(conf.originalsFolder, opts.originalFilename + '.' + data.meta.format));
+      /*image.formatAsync = PromiseA.promisify(image.format);
+      image.sizeAsync = PromiseA.promisify(image.size);*/
+      image.writeAsync = PromiseA.promisify(image.toFile);
     }
 
     // resize goals:
@@ -159,7 +161,9 @@ function process(conf, url, opts) {
     // if w and h are given, choose the smallest best fit
     // if crop and w and h are given, choose the ratio fit (may add letterboxing)
     // always resize before crop?
-    return image.sizeAsync().then(function (size) {
+    return image.metadata().then(function (metadata) {
+      var size = {width: metadata.width, height: metadata.height};
+
       var newsize
         ;
 
@@ -171,9 +175,10 @@ function process(conf, url, opts) {
         image.resize(newsize.w, newsize.h);
       }
 
-      if (isNewFormat) {
+      //The format is inferred from the extension, with JPEG, PNG, WebP and TIFF supported.
+      /*if (isNewFormat) {
         image.setFormat(targetFormat);
-      }
+      }*/
 
       if (quality) {
         image.quality(quality);
