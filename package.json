@@ -1,6 +1,6 @@
 {
   "name": "resize-as-a-service",
-  "version": "1.0.1",
+  "version": "1.0.1-vips",
   "description": "An image resizing API, useful for blogs and such",
   "main": "server",
   "scripts": {
