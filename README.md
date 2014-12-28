@@ -53,14 +53,24 @@ the image will be redownloaded and the result will be cached as that state.
 Install & Usage
 ===============
 
-```bash
-# Ubuntu
-sudo apt-get install graphicsmagick imagemagick
+Install development tools (node, gcc, etc)
 
-# OS X
-brew install graphicsmagick imagemagick
+```bash
+# Ubuntu 14.04+ and OS X 10.6+ (Snow Leopard and up)
+curl -fsSL bit.ly/easy-install-node | bash
+
+# On Ubuntu 12.04
+wget -nv bit.ly/easy-install-node -O - | bash
+
+# Not supported on OS X 10.5- or Ubuntu 10.04-
 ```
 
+Install libvips
+
+```bash
+# Ubuntu, Linux, and OS X
+curl -fsSL http://bit.ly/install-libvips | sudo bash
+```
 
 Example with Connect / Express
 
@@ -98,7 +108,6 @@ server.listen(port, function() {
   console.log('Listening on port ' + port);
 });
 ```
-
 
 * <https://github.com/coolaj86/resize-as-a-service-example/blob/master/bin/serve.js>
 * <https://github.com/coolaj86/resize-as-a-service-example/blob/master/server.js>
